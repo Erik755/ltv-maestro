@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     getUsersList(); // Inicializar si no existe
 
     try {
-      const activeSession = localStorage.getItem('marquesitas_logged_in_user');
+      const activeSession = sessionStorage.getItem('marquesitas_logged_in_user');
       if (activeSession) {
         setUser(JSON.parse(activeSession));
         setIsAuthenticated(true);
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       const sessionUser = { username: found.username, role: found.role };
       setUser(sessionUser);
       setIsAuthenticated(true);
-      localStorage.setItem('marquesitas_logged_in_user', JSON.stringify(sessionUser));
+      sessionStorage.setItem('marquesitas_logged_in_user', JSON.stringify(sessionUser));
       return sessionUser;
     } else {
       throw new Error('Usuario o contraseña incorrectos');
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   const logoutLocal = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('marquesitas_logged_in_user');
+    sessionStorage.removeItem('marquesitas_logged_in_user');
   };
 
   return (
