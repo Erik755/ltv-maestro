@@ -175,6 +175,7 @@ export default function Config() {
           <div className="space-y-1">
             <Label className="text-xs">Nuevo Usuario</Label>
             <Input
+              id="newUsername"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               placeholder="Ej. cajero1"
@@ -184,6 +185,7 @@ export default function Config() {
           <div className="space-y-1">
             <Label className="text-xs">Contraseña</Label>
             <Input
+              id="newPassword"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
