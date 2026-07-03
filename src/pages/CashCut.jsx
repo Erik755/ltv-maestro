@@ -47,7 +47,7 @@ export default function CashCut() {
 
   const createExpenseMutation = useMutation({
     mutationFn: (data) => base44.entities.DayExpense.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['todayExpenses'] }); setShowExpense(false); toast.success('Gasto registrado'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['pendingExpenses'] }); setShowExpense(false); toast.success('Gasto registrado'); },
   });
 
   const saveCutMutation = useMutation({
@@ -72,7 +72,7 @@ export default function CashCut() {
   });
 
   const stats = useMemo(() => {
-    const terminal = parseFloat(terminalSales) || 0;
+    const terminal = Math.max(0, parseFloat(terminalSales) || 0);
     const ordersSales = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
     const totalSales = ordersSales + terminal;
     const totalCash = activeOrders.filter(o => o.payment_method === 'efectivo').reduce((s, o) => s + (o.total || 0), 0);
@@ -81,8 +81,8 @@ export default function CashCut() {
     const totalCourtesy = activeOrders.filter(o => o.payment_method === 'cortesia').reduce((s, o) => s + (o.total || 0), 0);
     const cardCommissions = totalCard * CARD_COMMISSION_RATE;
     const totalExpenses = pendingExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-    const realIncome = totalSales - cardCommissions;
-    const avgTicket = activeOrders.length > 0 ? ordersSales / activeOrders.length : 0;
+    const realIncome = totalSales - cardCommissions - totalExpenses;
+    const avgTicket = activeOrders.length > 0 ? totalSales / activeOrders.length : 0;
     const expectedCash = totalCash - totalExpenses;
     const counted = parseFloat(countedCash) || 0;
     const cashDiff = counted - expectedCash;
@@ -91,8 +91,11 @@ export default function CashCut() {
   }, [activeOrders, cancelledOrders, pendingExpenses, countedCash, terminalSales]);
 
   const handleSaveCut = async () => {
-    if (pendingOrders.length === 0 && !stats.terminal) {
-      toast.error('No hay ventas pendientes para cortar');
+    if (pendingOrders.length === 0 && pendingExpenses.length === 0 && !stats.terminal) {
+      toast.error('No hay movimientos pendientes para cortar');
+      return;
+    }
+    if (!window.confirm('¿Estás seguro de que deseas cerrar el corte de caja? Esta acción asociará todas las órdenes y gastos pendientes a este corte de forma irreversible.')) {
       return;
     }
     const data = {
@@ -120,7 +123,9 @@ export default function CashCut() {
 
   const handleSaveExpense = async () => {
     if (!expenseForm.description || !expenseForm.amount) { toast.error('Completa los campos'); return; }
-    await createExpenseMutation.mutateAsync({ ...expenseForm, amount: parseFloat(expenseForm.amount), expense_date: today });
+    const amount = parseFloat(expenseForm.amount);
+    if (isNaN(amount) || amount <= 0) { toast.error('El monto del gasto debe ser mayor a 0'); return; }
+    await createExpenseMutation.mutateAsync({ ...expenseForm, amount, expense_date: today });
     setExpenseForm({ description: '', amount: '', category: 'otro', expense_date: today });
   };
 
@@ -170,7 +175,7 @@ export default function CashCut() {
         <p className="text-xs text-muted-foreground -mt-1">Captura el total cobrado en la terminal de tarjeta que no se registró como orden. Se suma a tarjeta y aplica comisión.</p>
         <div className="max-w-xs">
           <Label className="text-xs">Monto en terminal ($)</Label>
-          <Input type="number" value={terminalSales} onChange={(e) => setTerminalSales(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
+          <Input type="number" min="0" value={terminalSales} onChange={(e) => setTerminalSales(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
         </div>
       </Card>
 
@@ -229,7 +234,7 @@ export default function CashCut() {
           <Label className="text-xs">Notas del corte</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones del corte..." className="mt-1" />
         </div>
-        <Button onClick={handleSaveCut} className="w-full bg-primary" disabled={saveCutMutation.isPending || (pendingOrders.length === 0 && !stats.terminal)}>
+        <Button onClick={handleSaveCut} className="w-full bg-primary" disabled={saveCutMutation.isPending || (pendingOrders.length === 0 && pendingExpenses.length === 0 && !stats.terminal)}>
           <Receipt className="w-4 h-4 mr-2" /> Cerrar corte
         </Button>
       </Card>
@@ -243,7 +248,7 @@ export default function CashCut() {
             <DialogHeader><DialogTitle className="font-display">Registrar gasto</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>Descripción</Label><Input value={expenseForm.description} onChange={(e) => setExpenseForm(p => ({ ...p, description: e.target.value }))} className="mt-1" /></div>
-              <div><Label>Monto ($)</Label><Input type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm(p => ({ ...p, amount: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Monto ($)</Label><Input type="number" min="0.01" step="0.01" value={expenseForm.amount} onChange={(e) => setExpenseForm(p => ({ ...p, amount: e.target.value }))} className="mt-1" /></div>
               <div>
                 <Label>Categoría</Label>
                 <Select value={expenseForm.category} onValueChange={(v) => setExpenseForm(p => ({ ...p, category: v }))}>
