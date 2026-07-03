@@ -1,0 +1,47 @@
+{
+  "name": "StockAdjustment",
+  "type": "object",
+  "properties": {
+    "ingredient_id": {
+      "type": "string"
+    },
+    "ingredient_name": {
+      "type": "string"
+    },
+    "previous_quantity": {
+      "type": "number"
+    },
+    "new_quantity": {
+      "type": "number"
+    },
+    "difference": {
+      "type": "number"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "conteo_cierre",
+        "conteo_apertura",
+        "merma",
+        "producto_pegado",
+        "error_captura",
+        "prueba_receta",
+        "derrame",
+        "compra",
+        "ajuste_manual",
+        "otro"
+      ]
+    },
+    "comment": {
+      "type": "string"
+    },
+    "adjusted_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "ingredient_id",
+    "ingredient_name",
+    "reason"
+  ]
+}

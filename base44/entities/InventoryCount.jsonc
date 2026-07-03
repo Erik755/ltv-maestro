@@ -1,0 +1,82 @@
+{
+  "name": "InventoryCount",
+  "type": "object",
+  "properties": {
+    "ingredient_id": {
+      "type": "string"
+    },
+    "ingredient_name": {
+      "type": "string"
+    },
+    "expected_stock": {
+      "type": "number",
+      "description": "Stock esperado por el sistema"
+    },
+    "counted_stock": {
+      "type": "number",
+      "description": "Stock contado f\u00edsicamente"
+    },
+    "difference": {
+      "type": "number",
+      "description": "Diferencia en unidad"
+    },
+    "difference_money": {
+      "type": "number",
+      "description": "Diferencia en dinero"
+    },
+    "measurements": {
+      "type": "array",
+      "description": "Mediciones individuales por recipiente",
+      "items": {
+        "type": "object",
+        "properties": {
+          "container_name": {
+            "type": "string"
+          },
+          "gross_weight": {
+            "type": "number"
+          },
+          "tare_weight": {
+            "type": "number"
+          },
+          "net_weight": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "conteo_cierre",
+        "conteo_apertura",
+        "merma",
+        "producto_pegado",
+        "error_captura",
+        "prueba_receta",
+        "derrame",
+        "otro"
+      ]
+    },
+    "comment": {
+      "type": "string"
+    },
+    "count_type": {
+      "type": "string",
+      "enum": [
+        "apertura",
+        "cierre",
+        "aleatorio"
+      ]
+    },
+    "adjusted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si se ajust\u00f3 el stock"
+    }
+  },
+  "required": [
+    "ingredient_id",
+    "ingredient_name"
+  ]
+}

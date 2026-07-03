@@ -1,0 +1,32 @@
+{
+  "name": "Container",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nombre del recipiente"
+    },
+    "tare_weight": {
+      "type": "number",
+      "description": "Peso vac\u00edo / tara en gramos"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "g",
+        "ml"
+      ],
+      "default": "g",
+      "description": "Unidad"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Estado activo/inactivo"
+    }
+  },
+  "required": [
+    "name",
+    "tare_weight"
+  ]
+}

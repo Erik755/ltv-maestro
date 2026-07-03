@@ -1,0 +1,68 @@
+{
+  "name": "CashCut",
+  "type": "object",
+  "properties": {
+    "cut_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_sales": {
+      "type": "number"
+    },
+    "total_cash": {
+      "type": "number"
+    },
+    "total_card": {
+      "type": "number"
+    },
+    "terminal_sales": {
+      "type": "number",
+      "default": 0,
+      "description": "Ventas capturadas manualmente por terminal de tarjeta"
+    },
+    "total_transfer": {
+      "type": "number"
+    },
+    "total_courtesy": {
+      "type": "number"
+    },
+    "card_commissions": {
+      "type": "number"
+    },
+    "real_income": {
+      "type": "number"
+    },
+    "num_sales": {
+      "type": "number"
+    },
+    "avg_ticket": {
+      "type": "number"
+    },
+    "cancellations": {
+      "type": "number"
+    },
+    "expenses": {
+      "type": "number",
+      "default": 0
+    },
+    "expected_cash": {
+      "type": "number"
+    },
+    "counted_cash": {
+      "type": "number"
+    },
+    "cash_difference": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_closed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "cut_date"
+  ]
+}

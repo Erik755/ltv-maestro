@@ -1,0 +1,55 @@
+{
+  "name": "Ingredient",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nombre del ingrediente"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "g",
+        "ml",
+        "pieza"
+      ],
+      "description": "Unidad de medida"
+    },
+    "purchase_cost": {
+      "type": "number",
+      "description": "Costo de compra"
+    },
+    "purchase_quantity": {
+      "type": "number",
+      "description": "Cantidad comprada en la unidad"
+    },
+    "cost_per_unit": {
+      "type": "number",
+      "description": "Costo por unidad calculado"
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Stock actual esperado"
+    },
+    "min_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Stock m\u00ednimo para alerta"
+    },
+    "tolerance": {
+      "type": "number",
+      "default": 20,
+      "description": "Tolerancia de inventario en la unidad"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Estado activo/inactivo"
+    }
+  },
+  "required": [
+    "name",
+    "unit"
+  ]
+}

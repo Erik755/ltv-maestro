@@ -1,0 +1,35 @@
+{
+  "name": "DayExpense",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "expense_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "ingredientes",
+        "gas",
+        "transporte",
+        "limpieza",
+        "propinas",
+        "otro"
+      ]
+    },
+    "cut_id": {
+      "type": "string",
+      "description": "ID del corte de caja al que pertenece este gasto (vac\u00edo = a\u00fan no cortado)"
+    }
+  },
+  "required": [
+    "description",
+    "amount"
+  ]
+}

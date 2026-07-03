@@ -1,0 +1,89 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "order_number": {
+      "type": "number",
+      "description": "N\u00famero de orden del d\u00eda"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "preparando",
+        "lista",
+        "entregada",
+        "cancelada"
+      ],
+      "default": "pendiente"
+    },
+    "items": {
+      "type": "array",
+      "description": "Productos en la orden",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "extras": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "total": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "efectivo",
+        "tarjeta",
+        "transferencia",
+        "cortesia"
+      ]
+    },
+    "card_commission": {
+      "type": "number",
+      "default": 0
+    },
+    "real_income": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "sale_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cut_id": {
+      "type": "string",
+      "description": "ID del corte de caja al que pertenece esta orden (vac\u00edo = a\u00fan no cortada)"
+    }
+  },
+  "required": [
+    "order_number",
+    "total",
+    "payment_method"
+  ]
+}
