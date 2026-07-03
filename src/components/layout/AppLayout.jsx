@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   ShoppingCart, ClipboardList, Package, Wheat, BookOpen, 
-  Box, Wallet, BarChart3, Settings, Menu, X, ChevronRight
+  Box, Wallet, BarChart3, Settings, Menu, X, ChevronRight, LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
   { path: '/', label: 'Nueva Venta', icon: ShoppingCart, color: 'text-emerald-500' },
@@ -22,6 +23,7 @@ const navItems = [
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -84,8 +86,15 @@ export default function AppLayout() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-sidebar-border">
-          <p className="text-[10px] text-sidebar-foreground/40 text-center font-body">
+        <div className="p-4 border-t border-sidebar-border space-y-2">
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200"
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0 text-red-500" />
+            <span>Cerrar sesión</span>
+          </button>
+          <p className="text-[10px] text-sidebar-foreground/40 text-center font-body pt-1">
             LTV POS v1.0 — Hecho con 🫶
           </p>
         </div>
