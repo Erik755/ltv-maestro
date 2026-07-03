@@ -16,6 +16,9 @@ const paymentIcons = {
 export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompleteSale, isProcessing }) {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [cashReceived, setCashReceived] = useState('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
+  const [pendingPaymentMethod, setPendingPaymentMethod] = useState(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const commission = selectedPayment === 'tarjeta' ? subtotal * CARD_COMMISSION_RATE : 0;
@@ -35,14 +38,25 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
 
   const handleSelectPayment = (id) => {
     if (id === 'cortesia') {
-      const password = window.prompt('Introduce la contraseña para autorizar la cortesía:');
-      if (password !== 'Tranz@') {
-        alert('Contraseña de cortesía incorrecta');
-        return;
-      }
+      setPendingPaymentMethod(id);
+      setPasswordValue('');
+      setShowPasswordDialog(true);
+      return;
     }
     setSelectedPayment(id);
     if (id !== 'efectivo') setCashReceived('');
+  };
+
+  const handlePasswordSubmit = () => {
+    if (passwordValue === 'Tranz@') {
+      setSelectedPayment(pendingPaymentMethod);
+      if (pendingPaymentMethod !== 'efectivo') setCashReceived('');
+      setShowPasswordDialog(false);
+      setPendingPaymentMethod(null);
+      setPasswordValue('');
+    } else {
+      alert('Contraseña de cortesía incorrecta');
+    }
   };
 
   return (
@@ -195,6 +209,49 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
           {isProcessing ? 'Procesando...' : `Cobrar $${total.toFixed(0)}`}
         </Button>
       </div>
+
+      {showPasswordDialog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="font-display font-bold text-lg text-foreground">Autorizar Cortesía</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Se requiere contraseña de administrador para aplicar cortesía.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Contraseña</label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={passwordValue}
+                onChange={(e) => setPasswordValue(e.target.value)}
+                className="font-mono h-11"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handlePasswordSubmit();
+                }}
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPasswordDialog(false);
+                  setPendingPaymentMethod(null);
+                  setPasswordValue('');
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handlePasswordSubmit}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
