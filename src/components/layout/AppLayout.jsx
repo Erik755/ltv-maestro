@@ -43,7 +43,7 @@ export default function AppLayout() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-xl font-bold text-sidebar-primary-foreground tracking-tight">
-                Mis Marquesitas
+                La Tercera Vuelta
               </h1>
               <p className="text-xs text-sidebar-foreground/60 mt-0.5 font-body">
                 Sistema de Punto de Venta
@@ -86,7 +86,7 @@ export default function AppLayout() {
         {/* Footer */}
         <div className="p-4 border-t border-sidebar-border">
           <p className="text-[10px] text-sidebar-foreground/40 text-center font-body">
-            Marquesitas POS v1.0 — Hecho con 🫶
+            LTV POS v1.0 — Hecho con 🫶
           </p>
         </div>
       </aside>
@@ -103,7 +103,7 @@ export default function AppLayout() {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <span className="font-display font-semibold text-sm text-foreground lg:hidden">Marquesitas</span>
+            <span className="font-display font-semibold text-sm text-foreground lg:hidden">LTV</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />

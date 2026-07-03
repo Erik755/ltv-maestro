@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 
 export default function Config() {
-  const [businessName, setBusinessName] = useState('Mis Marquesitas');
+  const [businessName, setBusinessName] = useState('La Tercera Vuelta');
   const [cardCommission, setCardCommission] = useState('3.5');
   const [currency, setCurrency] = useState('MXN');
 
@@ -22,7 +22,7 @@ export default function Config() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `marquesitas-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `ltv-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Respaldo exportado');
