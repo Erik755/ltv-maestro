@@ -34,6 +34,13 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
   };
 
   const handleSelectPayment = (id) => {
+    if (id === 'cortesia') {
+      const password = window.prompt('Introduce la contraseña para autorizar la cortesía:');
+      if (password !== 'Tranz@') {
+        alert('Contraseña de cortesía incorrecta');
+        return;
+      }
+    }
     setSelectedPayment(id);
     if (id !== 'efectivo') setCashReceived('');
   };
