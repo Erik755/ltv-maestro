@@ -18,38 +18,69 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  const getUsersList = () => {
+    try {
+      const stored = localStorage.getItem('marquesitas_users');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    const defaultUsers = [{ username: 'marco', password: 'polo', role: 'admin' }];
+    localStorage.setItem('marquesitas_users', JSON.stringify(defaultUsers));
+    return defaultUsers;
+  };
+
   const checkAppState = async () => {
+    setIsLoadingPublicSettings(true);
+    setIsLoadingAuth(true);
     setAppPublicSettings({ id: appParams.appId, public_settings: 'public_without_login' });
-    setUser({ name: 'Administrador', email: 'admin@laterceravuelta.com' });
-    setIsAuthenticated(true);
-    setIsLoadingAuth(false);
+    
+    getUsersList(); // Inicializar si no existe
+
+    try {
+      const activeSession = localStorage.getItem('marquesitas_logged_in_user');
+      if (activeSession) {
+        setUser(JSON.parse(activeSession));
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    } catch (e) {
+      console.error(e);
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+
     setIsLoadingPublicSettings(false);
+    setIsLoadingAuth(false);
     setAuthChecked(true);
   };
 
   const checkUserAuth = async () => {
-    setUser({ name: 'Administrador', email: 'admin@laterceravuelta.com' });
-    setIsAuthenticated(true);
-    setIsLoadingAuth(false);
-    setAuthChecked(true);
+    await checkAppState();
   };
 
-  const logout = (shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
+  const loginLocal = async (username, password) => {
+    const users = getUsersList();
+    const found = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+    if (found) {
+      const sessionUser = { username: found.username, role: found.role };
+      setUser(sessionUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('marquesitas_logged_in_user', JSON.stringify(sessionUser));
+      return sessionUser;
     } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
+      throw new Error('Usuario o contraseña incorrectos');
     }
   };
 
-  const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+  const logoutLocal = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('marquesitas_logged_in_user');
   };
 
   return (
@@ -61,10 +92,12 @@ export const AuthProvider = ({ children }) => {
       authError,
       appPublicSettings,
       authChecked,
-      logout,
-      navigateToLogin,
+      logout: logoutLocal,
+      navigateToLogin: () => {},
       checkUserAuth,
-      checkAppState
+      checkAppState,
+      loginLocal,
+      logoutLocal
     }}>
       {children}
     </AuthContext.Provider>
