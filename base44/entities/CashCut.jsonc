@@ -51,6 +51,14 @@
     "counted_cash": {
       "type": "number"
     },
+    "counted_card": {
+      "type": "number",
+      "default": 0
+    },
+    "counted_transfer": {
+      "type": "number",
+      "default": 0
+    },
     "cash_difference": {
       "type": "number"
     },

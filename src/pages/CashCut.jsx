@@ -19,6 +19,8 @@ export default function CashCut() {
   const queryClient = useQueryClient();
   const today = format(new Date(), 'yyyy-MM-dd');
   const [countedCash, setCountedCash] = useState('');
+  const [countedCard, setCountedCard] = useState('');
+  const [countedTransfer, setCountedTransfer] = useState('');
   const [notes, setNotes] = useState('');
   const [showExpense, setShowExpense] = useState(false);
   const [expenseForm, setExpenseForm] = useState({ description: '', amount: '', category: 'otro', expense_date: today });
@@ -72,6 +74,8 @@ export default function CashCut() {
       queryClient.invalidateQueries({ queryKey: ['pendingExpenses'] });
       queryClient.invalidateQueries({ queryKey: ['allCuts'] });
       setCountedCash('');
+      setCountedCard('');
+      setCountedTransfer('');
       setNotes('');
       setLastSavedCut(cut);
       setIsRevealed(false);
@@ -90,11 +94,23 @@ export default function CashCut() {
     const realIncome = totalSales - cardCommissions - totalExpenses;
     const avgTicket = activeOrders.length > 0 ? totalSales / activeOrders.length : 0;
     const expectedCash = totalCash - totalExpenses;
-    const counted = parseFloat(countedCash) || 0;
-    const cashDiff = counted - expectedCash;
+    
+    const countedCashVal = parseFloat(countedCash) || 0;
+    const countedCardVal = parseFloat(countedCard) || 0;
+    const countedTransferVal = parseFloat(countedTransfer) || 0;
+    
+    const cashDiff = countedCashVal - expectedCash;
+    const cardDiff = countedCardVal - totalCard;
+    const transferDiff = countedTransferVal - totalTransfer;
 
-    return { totalSales, totalCash, totalCard, totalTransfer, totalCourtesy, cardCommissions, realIncome, avgTicket, numSales: activeOrders.length, cancellations: cancelledOrders.length, totalExpenses, expectedCash, cashDiff };
-  }, [activeOrders, cancelledOrders, pendingExpenses, countedCash]);
+    return { 
+      totalSales, totalCash, totalCard, totalTransfer, totalCourtesy, 
+      cardCommissions, realIncome, avgTicket, numSales: activeOrders.length, 
+      cancellations: cancelledOrders.length, totalExpenses, expectedCash, 
+      countedCashVal, countedCardVal, countedTransferVal,
+      cashDiff, cardDiff, transferDiff
+    };
+  }, [activeOrders, cancelledOrders, pendingExpenses, countedCash, countedCard, countedTransfer]);
 
   const handleSaveCut = async () => {
     if (pendingOrders.length === 0 && pendingExpenses.length === 0) {
@@ -118,7 +134,9 @@ export default function CashCut() {
       cancellations: stats.cancellations,
       expenses: stats.totalExpenses,
       expected_cash: stats.expectedCash,
-      counted_cash: parseFloat(countedCash) || 0,
+      counted_cash: stats.countedCashVal,
+      counted_card: stats.countedCardVal,
+      counted_transfer: stats.countedTransferVal,
       cash_difference: stats.cashDiff,
       notes,
       is_closed: true,
@@ -146,14 +164,18 @@ export default function CashCut() {
         'Fecha': c.cut_date,
         'Ventas Totales': c.total_sales,
         'Ventas Efectivo': c.total_cash,
-        'Ventas Tarjeta': c.total_card,
-        'Transferencias': c.total_transfer,
-        'Cortesías': c.total_courtesy,
-        'Gastos': c.expenses,
-        'Ingreso Real': c.real_income,
         'Efectivo Esperado': c.expected_cash,
         'Efectivo Contado': c.counted_cash,
         'Diferencia de Caja': c.cash_difference,
+        'Ventas Tarjeta': c.total_card,
+        'Tarjeta Contada': c.counted_card || 0,
+        'Diferencia Tarjeta': (c.counted_card || 0) - (c.total_card || 0),
+        'Transferencias': c.total_transfer,
+        'Transferencia Contada': c.counted_transfer || 0,
+        'Diferencia Transferencia': (c.counted_transfer || 0) - (c.total_transfer || 0),
+        'Cortesías': c.total_courtesy,
+        'Gastos': c.expenses,
+        'Ingreso Real': c.real_income,
         'Nro Ventas': c.num_sales,
         'Cancelaciones': c.cancellations,
         'Notas': c.notes || ''
@@ -310,27 +332,71 @@ export default function CashCut() {
             </div>
           </div>
 
-          {/* Conciliación Caja */}
-          <div className="space-y-2 py-2 border-b border-dashed">
-            <div className="flex justify-between font-bold">
-              <span>EFECTIVO CONTADO</span>
-              <span>${(lastSavedCut.counted_cash || 0).toFixed(2)}</span>
+          {/* Conciliación Efectivo */}
+          <div className="space-y-1 py-2 border-b border-dashed text-xs">
+            <div className="flex justify-between font-bold text-sm">
+              <span>EFECTIVO</span>
+              <span>Contado: ${(lastSavedCut.counted_cash || 0).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Efectivo Esperado:</span>
-              <span>${(lastSavedCut.expected_cash || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Gastos del Turno:</span>
-              <span>-${(lastSavedCut.expenses || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-xs pt-1 border-t border-dashed">
-              <span>DIFERENCIA CAJA:</span>
-              <span className={lastSavedCut.cash_difference >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                {lastSavedCut.cash_difference >= 0 ? '+' : ''}${(lastSavedCut.cash_difference || 0).toFixed(2)}
-              </span>
+            <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+              <div className="flex justify-between">
+                <span>Esperado en caja:</span>
+                <span>${(lastSavedCut.expected_cash || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-destructive">
+                <span>Gastos del Turno:</span>
+                <span>-${(lastSavedCut.expenses || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-foreground">
+                <span>Diferencia Efectivo:</span>
+                <span className={lastSavedCut.cash_difference >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  {lastSavedCut.cash_difference >= 0 ? '+' : ''}${(lastSavedCut.cash_difference || 0).toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Conciliación Tarjeta */}
+          <div className="space-y-1 py-2 border-b border-dashed text-xs">
+            <div className="flex justify-between font-bold text-sm">
+              <span>TARJETA</span>
+              <span>Contada: ${(lastSavedCut.counted_card || 0).toFixed(2)}</span>
+            </div>
+            <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+              <div className="flex justify-between">
+                <span>Esperada (Sistema):</span>
+                <span>${(lastSavedCut.total_card || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-foreground">
+                <span>Diferencia Tarjeta:</span>
+                <span className={((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  {((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)) >= 0 ? '+' : ''}${((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Conciliación Transferencias */}
+          <div className="space-y-1 py-2 border-b border-dashed text-xs">
+            <div className="flex justify-between font-bold text-sm">
+              <span>TRANSFERENCIAS</span>
+              <span>Contadas: ${(lastSavedCut.counted_transfer || 0).toFixed(2)}</span>
+            </div>
+            <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+              <div className="flex justify-between">
+                <span>Esperadas (Sistema):</span>
+                <span>${(lastSavedCut.total_transfer || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-foreground">
+                <span>Diferencia Transferencia:</span>
+                <span className={((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  {((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)) >= 0 ? '+' : ''}${((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+
 
           {/* Ingreso Real */}
           <div className="space-y-2 py-2 border-b border-dashed text-xs text-muted-foreground">
@@ -455,11 +521,59 @@ export default function CashCut() {
 
       {/* Cash count */}
       <Card className="p-4 space-y-4">
-        <h3 className="font-display font-bold">Conteo de efectivo</h3>
-        <div className="max-w-xs">
-          <Label className="text-xs">Efectivo contado ($)</Label>
-          <Input type="number" value={countedCash} onChange={(e) => setCountedCash(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
+        <h3 className="font-display font-bold">Conteo de Efectivo, Tarjetas y Transferencias</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <Label className="text-xs">Efectivo contado ($)</Label>
+            <Input type="number" value={countedCash} onChange={(e) => setCountedCash(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
+          </div>
+          <div>
+            <Label className="text-xs">Cobrado en Terminal ($)</Label>
+            <Input type="number" value={countedCard} onChange={(e) => setCountedCard(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
+          </div>
+          <div>
+            <Label className="text-xs">Transferencia bancaria ($)</Label>
+            <Input type="number" value={countedTransfer} onChange={(e) => setCountedTransfer(e.target.value)} placeholder="0.00" className="mt-1 font-display font-bold" />
+          </div>
         </div>
+
+        {/* Comparativa para administrador si se revelan los datos */}
+        {isRevealed && (
+          <div className="border border-dashed border-primary/30 rounded-lg p-4 bg-primary/5 space-y-3">
+            <h4 className="text-xs font-bold text-primary tracking-wider uppercase">Comparativa de Arqueo (Administrador)</h4>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
+              <div className="space-y-1">
+                <span className="font-bold text-foreground">EFECTIVO:</span>
+                <p className="text-muted-foreground">Esperado: ${stats.expectedCash.toFixed(2)}</p>
+                <p className="text-muted-foreground">Contado: ${stats.countedCashVal.toFixed(2)}</p>
+                <p className={`font-bold ${stats.cashDiff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  Diferencia: {stats.cashDiff >= 0 ? '+' : ''}${stats.cashDiff.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="font-bold text-foreground">TARJETA:</span>
+                <p className="text-muted-foreground">Esperado: ${stats.totalCard.toFixed(2)}</p>
+                <p className="text-muted-foreground">Contado: ${stats.countedCardVal.toFixed(2)}</p>
+                <p className={`font-bold ${stats.cardDiff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  Diferencia: {stats.cardDiff >= 0 ? '+' : ''}${stats.cardDiff.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="font-bold text-foreground">TRANSFERENCIA:</span>
+                <p className="text-muted-foreground">Esperado: ${stats.totalTransfer.toFixed(2)}</p>
+                <p className="text-muted-foreground">Contado: ${stats.countedTransferVal.toFixed(2)}</p>
+                <p className={`font-bold ${stats.transferDiff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  Diferencia: {stats.transferDiff >= 0 ? '+' : ''}${stats.transferDiff.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
           <Label className="text-xs">Notas del corte</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones del corte..." className="mt-1" />
