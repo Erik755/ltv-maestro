@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { deserializeNotes } from '@/pages/CashCut';
 
 export default function PreviousCuts({ cuts }) {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -116,161 +117,166 @@ export default function PreviousCuts({ cuts }) {
       </div>
 
       {/* Ticket/Tira de Venta detallado de corte histórico */}
-      {selectedCutForDetail && (
-        <Dialog open onOpenChange={() => setSelectedCutForDetail(null)}>
-          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="font-display font-bold text-center">Tira de Venta de Historial</DialogTitle>
-            </DialogHeader>
+      {selectedCutForDetail && (() => {
+        const { notes: cleanNotes, transfer: parsedTransfer } = deserializeNotes(selectedCutForDetail.notes);
+        const countedCardVal = selectedCutForDetail.terminal_sales || selectedCutForDetail.counted_card || 0;
 
-            <div className="p-6 bg-card border rounded-lg space-y-6 font-mono text-sm relative overflow-hidden" id="ticket-historico">
-              {/* Header */}
-              <div className="text-center space-y-1 pb-4 border-b border-dashed">
-                <h2 className="font-display text-lg font-bold tracking-wider">LA TERCERA VUELTA</h2>
-                <p className="text-xs text-muted-foreground">REPORTE DE CIERRE DE CAJA</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Fecha: {selectedCutForDetail.cut_date}</p>
-                <p className="text-[10px] text-muted-foreground">ID: {selectedCutForDetail.id.slice(0, 8)}...</p>
+        return (
+          <Dialog open onOpenChange={() => setSelectedCutForDetail(null)}>
+            <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-display font-bold text-center">Tira de Venta de Historial</DialogTitle>
+              </DialogHeader>
+
+              <div className="p-6 bg-card border rounded-lg space-y-6 font-mono text-sm relative overflow-hidden" id="ticket-historico">
+                {/* Header */}
+                <div className="text-center space-y-1 pb-4 border-b border-dashed">
+                  <h2 className="font-display text-lg font-bold tracking-wider">LA TERCERA VUELTA</h2>
+                  <p className="text-xs text-muted-foreground">REPORTE DE CIERRE DE CAJA</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Fecha: {selectedCutForDetail.cut_date}</p>
+                  <p className="text-[10px] text-muted-foreground">ID: {selectedCutForDetail.id.slice(0, 8)}...</p>
+                </div>
+
+                {/* Ventas */}
+                <div className="space-y-2 py-2 border-b border-dashed">
+                  <div className="flex justify-between font-bold">
+                    <span>VENTAS TOTALES</span>
+                    <span>${(selectedCutForDetail.total_sales || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="pl-3 space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Efectivo:</span>
+                      <span>${(selectedCutForDetail.total_cash || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tarjeta (Sistema):</span>
+                      <span>${(selectedCutForDetail.total_card || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Transferencias:</span>
+                      <span>${(selectedCutForDetail.total_transfer || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cortesías:</span>
+                      <span>${(selectedCutForDetail.total_courtesy || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conciliación Efectivo */}
+                <div className="space-y-1 py-2 border-b border-dashed text-xs">
+                  <div className="flex justify-between font-bold text-sm">
+                    <span>EFECTIVO</span>
+                    <span>Efectivo Contado: ${(selectedCutForDetail.counted_cash || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+                    <div className="flex justify-between">
+                      <span>Esperado en caja:</span>
+                      <span>${(selectedCutForDetail.expected_cash || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-destructive">
+                      <span>Gastos del Turno:</span>
+                      <span>-${(selectedCutForDetail.expenses || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>Diferencia Efectivo:</span>
+                      <span className={selectedCutForDetail.cash_difference >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        {selectedCutForDetail.cash_difference >= 0 ? '+' : ''}${(selectedCutForDetail.cash_difference || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conciliación Tarjeta */}
+                <div className="space-y-1 py-2 border-b border-dashed text-xs">
+                  <div className="flex justify-between font-bold text-sm">
+                    <span>TARJETA</span>
+                    <span>Cobrado en Terminal: ${countedCardVal.toFixed(2)}</span>
+                  </div>
+                  <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+                    <div className="flex justify-between">
+                      <span>Esperada (Sistema):</span>
+                      <span>${(selectedCutForDetail.total_card || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>Diferencia Tarjeta:</span>
+                      <span className={(countedCardVal - (selectedCutForDetail.total_card || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        {(countedCardVal - (selectedCutForDetail.total_card || 0)) >= 0 ? '+' : ''}${(countedCardVal - (selectedCutForDetail.total_card || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conciliación Transferencias */}
+                <div className="space-y-1 py-2 border-b border-dashed text-xs">
+                  <div className="flex justify-between font-bold text-sm">
+                    <span>TRANSFERENCIAS</span>
+                    <span>Transferencia Bancaria: ${parsedTransfer.toFixed(2)}</span>
+                  </div>
+                  <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
+                    <div className="flex justify-between">
+                      <span>Esperadas (Sistema):</span>
+                      <span>${(selectedCutForDetail.total_transfer || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>Diferencia Transferencia:</span>
+                      <span className={(parsedTransfer - (selectedCutForDetail.total_transfer || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        {(parsedTransfer - (selectedCutForDetail.total_transfer || 0)) >= 0 ? '+' : ''}${(parsedTransfer - (selectedCutForDetail.total_transfer || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ingreso Real */}
+                <div className="space-y-2 py-2 border-b border-dashed text-xs text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Comisiones Tarjeta:</span>
+                    <span>-${(selectedCutForDetail.card_commissions || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-sm text-foreground pt-1">
+                    <span>INGRESO REAL:</span>
+                    <span>${(selectedCutForDetail.real_income || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Notas */}
+                {cleanNotes && (
+                  <div className="space-y-1 text-xs py-2 border-b border-dashed">
+                    <p className="font-bold">NOTAS:</p>
+                    <p className="italic text-muted-foreground whitespace-pre-wrap">{cleanNotes}</p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="text-center text-[10px] text-muted-foreground pt-4">
+                  <p>Reporte de Historial</p>
+                  <p>Made by Dad for Ratoncita V1.0 🫶</p>
+                </div>
               </div>
 
-              {/* Ventas */}
-              <div className="space-y-2 py-2 border-b border-dashed">
-                <div className="flex justify-between font-bold">
-                  <span>VENTAS TOTALES</span>
-                  <span>${(selectedCutForDetail.total_sales || 0).toFixed(2)}</span>
-                </div>
-                <div className="pl-3 space-y-1 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Efectivo:</span>
-                    <span>${(selectedCutForDetail.total_cash || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tarjeta (Sistema):</span>
-                    <span>${(selectedCutForDetail.total_card || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Transferencias:</span>
-                    <span>${(selectedCutForDetail.total_transfer || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cortesías:</span>
-                    <span>${(selectedCutForDetail.total_courtesy || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conciliación Efectivo */}
-              <div className="space-y-1 py-2 border-b border-dashed text-xs">
-                <div className="flex justify-between font-bold text-sm">
-                  <span>EFECTIVO</span>
-                  <span>Contado: ${(selectedCutForDetail.counted_cash || 0).toFixed(2)}</span>
-                </div>
-                <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
-                  <div className="flex justify-between">
-                    <span>Esperado en caja:</span>
-                    <span>${(selectedCutForDetail.expected_cash || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-destructive">
-                    <span>Gastos del Turno:</span>
-                    <span>-${(selectedCutForDetail.expenses || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-foreground">
-                    <span>Diferencia Efectivo:</span>
-                    <span className={selectedCutForDetail.cash_difference >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                      {selectedCutForDetail.cash_difference >= 0 ? '+' : ''}${(selectedCutForDetail.cash_difference || 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conciliación Tarjeta */}
-              <div className="space-y-1 py-2 border-b border-dashed text-xs">
-                <div className="flex justify-between font-bold text-sm">
-                  <span>TARJETA</span>
-                  <span>Contada: ${(selectedCutForDetail.counted_card || 0).toFixed(2)}</span>
-                </div>
-                <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
-                  <div className="flex justify-between">
-                    <span>Esperada (Sistema):</span>
-                    <span>${(selectedCutForDetail.total_card || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-foreground">
-                    <span>Diferencia Tarjeta:</span>
-                    <span className={((selectedCutForDetail.counted_card || 0) - (selectedCutForDetail.total_card || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                      {((selectedCutForDetail.counted_card || 0) - (selectedCutForDetail.total_card || 0)) >= 0 ? '+' : ''}${((selectedCutForDetail.counted_card || 0) - (selectedCutForDetail.total_card || 0)).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conciliación Transferencias */}
-              <div className="space-y-1 py-2 border-b border-dashed text-xs">
-                <div className="flex justify-between font-bold text-sm">
-                  <span>TRANSFERENCIAS</span>
-                  <span>Contadas: ${(selectedCutForDetail.counted_transfer || 0).toFixed(2)}</span>
-                </div>
-                <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
-                  <div className="flex justify-between">
-                    <span>Esperadas (Sistema):</span>
-                    <span>${(selectedCutForDetail.total_transfer || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-foreground">
-                    <span>Diferencia Transferencia:</span>
-                    <span className={((selectedCutForDetail.counted_transfer || 0) - (selectedCutForDetail.total_transfer || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                      {((selectedCutForDetail.counted_transfer || 0) - (selectedCutForDetail.total_transfer || 0)) >= 0 ? '+' : ''}${((selectedCutForDetail.counted_transfer || 0) - (selectedCutForDetail.total_transfer || 0)).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ingreso Real */}
-              <div className="space-y-2 py-2 border-b border-dashed text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Comisiones Tarjeta:</span>
-                  <span>-${(selectedCutForDetail.card_commissions || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-sm text-foreground pt-1">
-                  <span>INGRESO REAL:</span>
-                  <span>${(selectedCutForDetail.real_income || 0).toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Notas */}
-              {selectedCutForDetail.notes && (
-                <div className="space-y-1 text-xs py-2 border-b border-dashed">
-                  <p className="font-bold">NOTAS:</p>
-                  <p className="italic text-muted-foreground whitespace-pre-wrap">{selectedCutForDetail.notes}</p>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="text-center text-[10px] text-muted-foreground pt-4">
-                <p>Reporte de Historial</p>
-                <p>Made by Dad for Ratoncita V1.0 🫶</p>
-              </div>
-            </div>
-
-            <DialogFooter className="mt-4 gap-2">
-              <Button
-                onClick={() => {
-                  const printContent = document.getElementById('ticket-historico').innerHTML;
-                  const originalContent = document.body.innerHTML;
-                  document.body.innerHTML = printContent;
-                  window.print();
-                  document.body.innerHTML = originalContent;
-                  window.location.reload();
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                <Printer className="w-4 h-4 mr-2" /> Imprimir
-              </Button>
-              <Button onClick={() => setSelectedCutForDetail(null)} className="flex-1 bg-primary">
-                Cerrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              <DialogFooter className="mt-4 gap-2">
+                <Button
+                  onClick={() => {
+                    const printContent = document.getElementById('ticket-historico').innerHTML;
+                    const originalContent = document.body.innerHTML;
+                    document.body.innerHTML = printContent;
+                    window.print();
+                    document.body.innerHTML = originalContent;
+                    window.location.reload();
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Printer className="w-4 h-4 mr-2" /> Imprimir
+                </Button>
+                <Button onClick={() => setSelectedCutForDetail(null)} className="flex-1 bg-primary">
+                  Cerrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </Card>
   );
 }

@@ -15,6 +15,21 @@ import { toast } from 'sonner';
 import PreviousCuts from '@/components/cash/PreviousCuts';
 import * as XLSX from 'xlsx';
 
+export const serializeNotes = (userNotes, transferVal) => {
+  return `${userNotes || ''}\n[METADATA:transfer=${transferVal || 0}]`.trim();
+};
+
+export const deserializeNotes = (dbNotes) => {
+  if (!dbNotes) return { notes: '', transfer: 0 };
+  const match = dbNotes.match(/\[METADATA:transfer=([\d.]+)\]/);
+  if (match) {
+    const transfer = parseFloat(match[1]) || 0;
+    const notes = dbNotes.replace(/\[METADATA:transfer=[\d.]+\]/, '').trim();
+    return { notes, transfer };
+  }
+  return { notes: dbNotes, transfer: 0 };
+};
+
 export default function CashCut() {
   const queryClient = useQueryClient();
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -116,6 +131,7 @@ export default function CashCut() {
     if (!window.confirm('¿Estás seguro de que deseas cerrar el corte de caja? Esta acción asociará todas las órdenes y gastos pendientes a este corte de forma irreversible.')) {
       return;
     }
+    const serializedNotes = serializeNotes(notes, stats.countedTransferVal);
     const data = {
       cut_date: today,
       total_sales: stats.totalSales,
@@ -131,10 +147,9 @@ export default function CashCut() {
       expenses: stats.totalExpenses,
       expected_cash: stats.expectedCash,
       counted_cash: stats.countedCashVal,
-      counted_card: stats.countedCardVal,
-      counted_transfer: stats.countedTransferVal,
+      terminal_sales: stats.countedCardVal,
       cash_difference: stats.cashDiff,
-      notes,
+      notes: serializedNotes,
       is_closed: true,
     };
     await saveCutMutation.mutateAsync(data);
@@ -155,27 +170,30 @@ export default function CashCut() {
         base44.entities.DayExpense.list('-created_date', 500)
       ]);
 
-      const summaryData = allCuts.map(c => ({
-        'ID Corte': c.id,
-        'Fecha': c.cut_date,
-        'Ventas Totales': c.total_sales,
-        'Ventas Efectivo': c.total_cash,
-        'Efectivo Esperado': c.expected_cash,
-        'Efectivo Contado': c.counted_cash,
-        'Diferencia de Caja': c.cash_difference,
-        'Ventas Tarjeta': c.total_card,
-        'Tarjeta Contada': c.counted_card || 0,
-        'Diferencia Tarjeta': (c.counted_card || 0) - (c.total_card || 0),
-        'Transferencias': c.total_transfer,
-        'Transferencia Contada': c.counted_transfer || 0,
-        'Diferencia Transferencia': (c.counted_transfer || 0) - (c.total_transfer || 0),
-        'Cortesías': c.total_courtesy,
-        'Gastos': c.expenses,
-        'Ingreso Real': c.real_income,
-        'Nro Ventas': c.num_sales,
-        'Cancelaciones': c.cancellations,
-        'Notas': c.notes || ''
-      }));
+      const summaryData = allCuts.map(c => {
+        const { notes: cleanNotes, transfer: parsedTransfer } = deserializeNotes(c.notes);
+        return {
+          'ID Corte': c.id,
+          'Fecha': c.cut_date,
+          'Ventas Totales': c.total_sales,
+          'Ventas Efectivo': c.total_cash,
+          'Efectivo Esperado': c.expected_cash,
+          'Efectivo Contado': c.counted_cash,
+          'Diferencia de Caja': c.cash_difference,
+          'Ventas Tarjeta': c.total_card,
+          'Tarjeta Contada': c.terminal_sales || 0,
+          'Diferencia Tarjeta': (c.terminal_sales || 0) - (c.total_card || 0),
+          'Transferencias': c.total_transfer,
+          'Transferencia Contada': parsedTransfer || 0,
+          'Diferencia Transferencia': (parsedTransfer || 0) - (c.total_transfer || 0),
+          'Cortesías': c.total_courtesy,
+          'Gastos': c.expenses,
+          'Ingreso Real': c.real_income,
+          'Nro Ventas': c.num_sales,
+          'Cancelaciones': c.cancellations,
+          'Notas': cleanNotes || ''
+        };
+      });
 
       const ordersData = allOrders.map(o => ({
         'ID Orden': o.id,
@@ -291,6 +309,9 @@ export default function CashCut() {
 
   // 2. Pantalla de Tira de Venta (Reporte Post-Corte)
   if (lastSavedCut) {
+    const { notes: cleanNotes, transfer: parsedTransfer } = deserializeNotes(lastSavedCut.notes);
+    const countedCardVal = lastSavedCut.terminal_sales || lastSavedCut.counted_card || 0;
+
     return (
       <div className="p-4 space-y-6 max-w-md mx-auto">
         <Card className="p-6 bg-card border shadow-md space-y-6 font-mono text-sm relative overflow-hidden" id="ticket-cierre">
@@ -332,7 +353,7 @@ export default function CashCut() {
           <div className="space-y-1 py-2 border-b border-dashed text-xs">
             <div className="flex justify-between font-bold text-sm">
               <span>EFECTIVO</span>
-              <span>Contado: ${(lastSavedCut.counted_cash || 0).toFixed(2)}</span>
+              <span>Efectivo Contado: ${(lastSavedCut.counted_cash || 0).toFixed(2)}</span>
             </div>
             <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
               <div className="flex justify-between">
@@ -356,7 +377,7 @@ export default function CashCut() {
           <div className="space-y-1 py-2 border-b border-dashed text-xs">
             <div className="flex justify-between font-bold text-sm">
               <span>TARJETA</span>
-              <span>Contada: ${(lastSavedCut.counted_card || 0).toFixed(2)}</span>
+              <span>Cobrado en Terminal: ${countedCardVal.toFixed(2)}</span>
             </div>
             <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
               <div className="flex justify-between">
@@ -365,8 +386,8 @@ export default function CashCut() {
               </div>
               <div className="flex justify-between font-bold text-foreground">
                 <span>Diferencia Tarjeta:</span>
-                <span className={((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                  {((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)) >= 0 ? '+' : ''}${((lastSavedCut.counted_card || 0) - (lastSavedCut.total_card || 0)).toFixed(2)}
+                <span className={(countedCardVal - (lastSavedCut.total_card || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  {(countedCardVal - (lastSavedCut.total_card || 0)) >= 0 ? '+' : ''}${(countedCardVal - (lastSavedCut.total_card || 0)).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -376,7 +397,7 @@ export default function CashCut() {
           <div className="space-y-1 py-2 border-b border-dashed text-xs">
             <div className="flex justify-between font-bold text-sm">
               <span>TRANSFERENCIAS</span>
-              <span>Contadas: ${(lastSavedCut.counted_transfer || 0).toFixed(2)}</span>
+              <span>Transferencia Bancaria: ${parsedTransfer.toFixed(2)}</span>
             </div>
             <div className="pl-3 space-y-0.5 text-muted-foreground text-[11px]">
               <div className="flex justify-between">
@@ -385,14 +406,12 @@ export default function CashCut() {
               </div>
               <div className="flex justify-between font-bold text-foreground">
                 <span>Diferencia Transferencia:</span>
-                <span className={((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                  {((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)) >= 0 ? '+' : ''}${((lastSavedCut.counted_transfer || 0) - (lastSavedCut.total_transfer || 0)).toFixed(2)}
+                <span className={(parsedTransfer - (lastSavedCut.total_transfer || 0)) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  {(parsedTransfer - (lastSavedCut.total_transfer || 0)) >= 0 ? '+' : ''}${(parsedTransfer - (lastSavedCut.total_transfer || 0)).toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
-
-
 
           {/* Ingreso Real */}
           <div className="space-y-2 py-2 border-b border-dashed text-xs text-muted-foreground">
@@ -407,10 +426,10 @@ export default function CashCut() {
           </div>
 
           {/* Notas */}
-          {lastSavedCut.notes && (
+          {cleanNotes && (
             <div className="space-y-1 text-xs py-2 border-b border-dashed">
               <p className="font-bold">NOTAS:</p>
-              <p className="italic text-muted-foreground whitespace-pre-wrap">{lastSavedCut.notes}</p>
+              <p className="italic text-muted-foreground whitespace-pre-wrap">{cleanNotes}</p>
             </div>
           )}
 

@@ -13,6 +13,16 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
+const getPaymentMethodDisplay = (method) => {
+  switch (method) {
+    case 'efectivo': return '💵 Efectivo';
+    case 'tarjeta': return '💳 Tarjeta';
+    case 'transferencia': return '📱 Transferencia';
+    case 'cortesia': return '🎁 Cortesía';
+    default: return method;
+  }
+};
+
 export default function Orders() {
   const queryClient = useQueryClient();
 
@@ -105,7 +115,7 @@ export default function Orders() {
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div>
             <span className="font-display font-bold">${order.total?.toFixed(0)}</span>
-            <span className="text-xs text-muted-foreground ml-2">{order.payment_method}</span>
+            <span className="text-xs text-muted-foreground ml-2">{getPaymentMethodDisplay(order.payment_method)}</span>
           </div>
           <div className="flex gap-2">
             {order.status !== 'cancelada' && (
