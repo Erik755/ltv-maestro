@@ -113,10 +113,6 @@ export default function CashCut() {
   }, [activeOrders, cancelledOrders, pendingExpenses, countedCash, countedCard, countedTransfer]);
 
   const handleSaveCut = async () => {
-    if (pendingOrders.length === 0 && pendingExpenses.length === 0) {
-      toast.error('No hay movimientos pendientes para cortar');
-      return;
-    }
     if (!window.confirm('¿Estás seguro de que deseas cerrar el corte de caja? Esta acción asociará todas las órdenes y gastos pendientes a este corte de forma irreversible.')) {
       return;
     }
@@ -578,7 +574,7 @@ export default function CashCut() {
           <Label className="text-xs">Notas del corte</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones del corte..." className="mt-1" />
         </div>
-        <Button onClick={handleSaveCut} className="w-full bg-primary" disabled={saveCutMutation.isPending || (pendingOrders.length === 0 && pendingExpenses.length === 0)}>
+        <Button onClick={handleSaveCut} className="w-full bg-primary" disabled={saveCutMutation.isPending}>
           <Receipt className="w-4 h-4 mr-2" /> Cerrar corte
         </Button>
       </Card>
