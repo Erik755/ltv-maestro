@@ -1,21 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, ChevronRight } from 'lucide-react';
+import { Clock, ChevronRight, Lock, Unlock, CheckCircle } from 'lucide-react';
 import { ORDER_STATUSES } from '@/lib/constants';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function Orders() {
   const queryClient = useQueryClient();
-  const today = new Date().toISOString().split('T')[0];
 
+  const [showDelivered, setShowDelivered] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [authPassword, setAuthPassword] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // Solo mostrar órdenes del corte/turno activo (cut_id null)
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['todayOrders'],
-    queryFn: () => base44.entities.Order.filter({ sale_date: today }, '-created_date'),
+    queryFn: () => base44.entities.Order.filter({ cut_id: null }, '-created_date'),
   });
 
   const updateMutation = useMutation({
@@ -30,107 +39,207 @@ export default function Orders() {
     return null;
   };
 
+  const activeOrders = orders.filter(o => o.status !== 'entregada');
+  const deliveredOrders = orders.filter(o => o.status === 'entregada');
+
+  const handleAuthSubmit = (e) => {
+    e.preventDefault();
+    if (authPassword === 'Tranz@') {
+      setIsUnlocked(true);
+      setShowAuthDialog(false);
+      setShowDelivered(true);
+      setAuthPassword('');
+      toast.success('Acceso concedido a órdenes entregadas');
+    } else {
+      toast.error('Contraseña de administrador incorrecta');
+    }
+  };
+
+  const handleOpenDelivered = () => {
+    if (isUnlocked) {
+      setShowDelivered(true);
+    } else {
+      setShowAuthDialog(true);
+    }
+  };
+
   const statusGroups = ORDER_STATUSES.map(s => ({
     ...s,
     orders: orders.filter(o => o.status === s.id),
   }));
 
+  const renderOrderCard = (order) => {
+    const statusConfig = getStatusConfig(order.status);
+    const nextStatus = getNextStatus(order.status);
+
+    return (
+      <Card key={order.id} className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-display font-bold text-lg">#{order.order_number}</span>
+            <Badge className={`${statusConfig.color} border text-[11px]`}>{statusConfig.label}</Badge>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            {order.created_date ? format(new Date(order.created_date), 'HH:mm') : ''}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          {order.items?.map((item, i) => (
+            <div key={i} className="flex items-start justify-between text-sm">
+              <div className="flex-1">
+                <span className="font-medium">{item.quantity}x</span> {item.product_name}
+                {item.extras?.length > 0 && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    ({item.extras.join(', ')})
+                  </span>
+                )}
+                {item.note && <p className="text-[11px] text-muted-foreground italic">📝 {item.note}</p>}
+              </div>
+              <span className="text-sm font-medium">${(item.price * item.quantity).toFixed(0)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div>
+            <span className="font-display font-bold">${order.total?.toFixed(0)}</span>
+            <span className="text-xs text-muted-foreground ml-2">{order.payment_method}</span>
+          </div>
+          <div className="flex gap-2">
+            {order.status !== 'cancelada' && (
+              <Select
+                value={order.status}
+                onValueChange={(value) => updateMutation.mutate({ id: order.id, data: { status: value } })}
+              >
+                <SelectTrigger className="h-8 text-xs w-auto">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_STATUSES.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {nextStatus && order.status !== 'cancelada' && order.status !== 'entregada' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => updateMutation.mutate({ id: order.id, data: { status: nextStatus.id } })}
+                className="h-8 text-xs"
+              >
+                {nextStatus.label} <ChevronRight className="w-3 h-3 ml-1" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="p-4 space-y-6">
-      <div>
-        <h2 className="font-display text-2xl font-bold">Órdenes del día</h2>
-        <p className="text-sm text-muted-foreground mt-1">{orders.length} órdenes — {format(new Date(), 'dd/MM/yyyy')}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="font-display text-2xl font-bold">Órdenes Activas</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeOrders.length} órdenes activas en el turno actual
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleOpenDelivered}
+          className="sm:w-auto w-full border-primary/30 hover:bg-primary/5 flex items-center justify-center gap-2"
+        >
+          {isUnlocked ? <Unlock className="w-4 h-4 text-emerald-600" /> : <Lock className="w-4 h-4" />}
+          <span>Órdenes Entregadas ({deliveredOrders.length})</span>
+        </Button>
       </div>
 
       {/* Status tabs - mobile scroll */}
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0">
         {statusGroups.map(group => (
           <Badge key={group.id} className={`${group.color} border flex-shrink-0 px-3 py-1.5 text-sm font-medium`}>
-            {group.label} ({group.orders.length})
+            {group.label} ({group.id === 'entregada' ? deliveredOrders.length : activeOrders.filter(o => o.status === group.id).length})
           </Badge>
         ))}
       </div>
 
       {/* Orders grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {orders.map(order => {
-          const statusConfig = getStatusConfig(order.status);
-          const nextStatus = getNextStatus(order.status);
-
-          return (
-            <Card key={order.id} className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-lg">#{order.order_number}</span>
-                  <Badge className={`${statusConfig.color} border text-[11px]`}>{statusConfig.label}</Badge>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  {format(new Date(order.created_date), 'HH:mm')}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                {order.items?.map((item, i) => (
-                  <div key={i} className="flex items-start justify-between text-sm">
-                    <div className="flex-1">
-                      <span className="font-medium">{item.quantity}x</span> {item.product_name}
-                      {item.extras?.length > 0 && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          ({item.extras.join(', ')})
-                        </span>
-                      )}
-                      {item.note && <p className="text-[11px] text-muted-foreground italic">📝 {item.note}</p>}
-                    </div>
-                    <span className="text-sm font-medium">${(item.price * item.quantity).toFixed(0)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div>
-                  <span className="font-display font-bold">${order.total?.toFixed(0)}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{order.payment_method}</span>
-                </div>
-                <div className="flex gap-2">
-                  {order.status !== 'cancelada' && order.status !== 'entregada' && (
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) => updateMutation.mutate({ id: order.id, data: { status: value } })}
-                    >
-                      <SelectTrigger className="h-8 text-xs w-auto">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ORDER_STATUSES.map(s => (
-                          <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {nextStatus && order.status !== 'cancelada' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateMutation.mutate({ id: order.id, data: { status: nextStatus.id } })}
-                      className="h-8 text-xs"
-                    >
-                      {nextStatus.label} <ChevronRight className="w-3 h-3 ml-1" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          );
-        })}
+        {activeOrders.map(renderOrderCard)}
       </div>
 
-      {orders.length === 0 && !isLoading && (
+      {activeOrders.length === 0 && !isLoading && (
         <div className="text-center py-16">
           <p className="text-4xl mb-3">🫓</p>
-          <p className="text-muted-foreground font-medium">No hay órdenes todavía</p>
-          <p className="text-sm text-muted-foreground">Las marquesitas se hacen solas... espera, no.</p>
+          <p className="text-muted-foreground font-medium">No hay órdenes activas pendientes</p>
+          <p className="text-sm text-muted-foreground">¡Buen trabajo! Todas las órdenes están entregadas.</p>
         </div>
+      )}
+
+      {/* Auth Dialog */}
+      {showAuthDialog && (
+        <Dialog open onOpenChange={() => setShowAuthDialog(false)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="font-display">Autorización Requerida</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div>
+                <Label>Contraseña de Administrador</Label>
+                <Input 
+                  type="password" 
+                  value={authPassword} 
+                  onChange={(e) => setAuthPassword(e.target.value)} 
+                  className="mt-1" 
+                  placeholder="••••••••"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowAuthDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-primary">
+                  Validar
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delivered Orders Dialog */}
+      {showDelivered && (
+        <Dialog open onOpenChange={() => setShowDelivered(false)}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-display flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+                Órdenes Entregadas (Turno Activo)
+              </DialogTitle>
+            </DialogHeader>
+            
+            {deliveredOrders.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No hay órdenes entregadas en este turno.</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+                {deliveredOrders.map(renderOrderCard)}
+              </div>
+            )}
+            
+            <DialogFooter className="mt-6">
+              <Button onClick={() => setShowDelivered(false)} className="bg-primary">
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
