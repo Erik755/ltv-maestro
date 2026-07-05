@@ -7,6 +7,7 @@ import ExtrasDialog from '@/components/sale/ExtrasDialog';
 import EditPriceDialog from '@/components/sale/EditPriceDialog';
 import { toast } from 'sonner';
 import { CARD_COMMISSION_RATE, getRandomMicrocopy } from '@/lib/constants';
+import { serializeOrderNotes } from '@/lib/utils';
 
 export default function NewSale() {
   const [ticketItems, setTicketItems] = useState([]);
@@ -137,11 +138,12 @@ export default function NewSale() {
         note: i.note,
       })),
       subtotal,
-      total: subtotal,
-      payment_method: paymentMethod,
+      total: paymentMethod === 'cortesia' ? 0 : subtotal,
+      payment_method: paymentMethod === 'cortesia' ? 'efectivo' : paymentMethod,
       card_commission: commission,
-      real_income: realIncome,
+      real_income: paymentMethod === 'cortesia' ? 0 : realIncome,
       sale_date: new Date().toISOString().split('T')[0],
+      notes: serializeOrderNotes('', paymentMethod),
     };
 
     await createOrderMutation.mutateAsync(orderData);

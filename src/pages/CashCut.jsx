@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import PreviousCuts from '@/components/cash/PreviousCuts';
 import * as XLSX from 'xlsx';
+import { deserializeOrder } from '@/lib/utils';
 
 export const serializeNotes = (userNotes, transferVal) => {
   return `${userNotes || ''}\n[METADATA:transfer=${transferVal || 0}]`.trim();
@@ -50,7 +51,10 @@ export default function CashCut() {
   // El corte cuenta todo lo pendiente de cortar (cut_id vacío), sin importar el día
   const { data: orders = [] } = useQuery({
     queryKey: ['pendingOrders'],
-    queryFn: () => base44.entities.Order.filter({ cut_id: null }),
+    queryFn: async () => {
+      const rawOrders = await base44.entities.Order.filter({ cut_id: null });
+      return rawOrders.map(deserializeOrder);
+    },
   });
 
   const { data: expenses = [] } = useQuery({
@@ -164,11 +168,12 @@ export default function CashCut() {
     try {
       toast.loading('Generando reporte Excel...');
       
-      const [allCuts, allOrders, allExpenses] = await Promise.all([
+      const [allCuts, rawAllOrders, allExpenses] = await Promise.all([
         base44.entities.CashCut.list('-created_date', 100),
         base44.entities.Order.list('-created_date', 1000),
         base44.entities.DayExpense.list('-created_date', 500)
       ]);
+      const allOrders = rawAllOrders.map(deserializeOrder);
 
       const summaryData = allCuts.map(c => {
         const { notes: cleanNotes, transfer: parsedTransfer } = deserializeNotes(c.notes);

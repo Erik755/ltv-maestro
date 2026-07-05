@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, ShoppingBag, DollarSign, Award, Wheat, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
+import { deserializeOrder } from '@/lib/utils';
 
 const COLORS = ['#16a34a', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
 
@@ -14,7 +15,10 @@ export default function Reports() {
 
   const { data: orders = [] } = useQuery({
     queryKey: ['todayOrders'],
-    queryFn: () => base44.entities.Order.filter({ sale_date: today }),
+    queryFn: async () => {
+      const rawOrders = await base44.entities.Order.filter({ sale_date: today });
+      return rawOrders.map(deserializeOrder);
+    },
   });
 
   const { data: ingredients = [] } = useQuery({

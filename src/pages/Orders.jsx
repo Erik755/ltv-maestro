@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { deserializeOrder } from '@/lib/utils';
 
 const getPaymentMethodDisplay = (method) => {
   switch (method) {
@@ -34,7 +35,10 @@ export default function Orders() {
   // Solo mostrar órdenes del corte/turno activo (cut_id null)
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['todayOrders'],
-    queryFn: () => base44.entities.Order.filter({ cut_id: null }, '-created_date'),
+    queryFn: async () => {
+      const rawOrders = await base44.entities.Order.filter({ cut_id: null }, '-created_date');
+      return rawOrders.map(deserializeOrder);
+    },
   });
 
   const updateMutation = useMutation({
