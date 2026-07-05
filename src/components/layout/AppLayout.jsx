@@ -95,7 +95,7 @@ export default function AppLayout() {
             <span>Cerrar sesión</span>
           </button>
           <p className="text-[10px] text-sidebar-foreground/40 text-center font-body pt-1">
-            LTV POS v1.0 — Hecho con 🫶
+            Ratocita´s development v1.0🫶
           </p>
         </div>
       </aside>
