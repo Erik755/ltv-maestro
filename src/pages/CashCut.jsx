@@ -421,7 +421,7 @@ export default function CashCut() {
           {/* Footer */}
           <div className="text-center text-[10px] text-muted-foreground pt-4">
             <p>Reporte generado con éxito</p>
-            <p>Ratocita´s development v1.0🫶</p>
+            <p>Made by Dad for Ratoncita V1.0</p>
           </div>
         </Card>
 
