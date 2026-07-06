@@ -7,7 +7,7 @@ import ExtrasDialog from '@/components/sale/ExtrasDialog';
 import EditPriceDialog from '@/components/sale/EditPriceDialog';
 import { toast } from 'sonner';
 import { CARD_COMMISSION_RATE, getRandomMicrocopy } from '@/lib/constants';
-import { serializeOrderNotes } from '@/lib/utils';
+import { serializeOrderNotes, deserializeOrder } from '@/lib/utils';
 
 export default function NewSale() {
   const [ticketItems, setTicketItems] = useState([]);
@@ -17,7 +17,7 @@ export default function NewSale() {
   const queryClient = useQueryClient();
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', { active: true }],
     queryFn: () => base44.entities.Product.filter({ is_active: true }),
   });
 
@@ -33,14 +33,17 @@ export default function NewSale() {
 
   const { data: pendingOrders = [] } = useQuery({
     queryKey: ['pendingOrders'],
-    queryFn: () => base44.entities.Order.filter({ cut_id: null }),
+    queryFn: async () => {
+      const rawOrders = await base44.entities.Order.filter({ cut_id: null }, '-created_date');
+      return rawOrders.map(deserializeOrder);
+    },
   });
 
   const createOrderMutation = useMutation({
     mutationFn: (orderData) => base44.entities.Order.create(orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingOrders'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['todayOrdersReport'] });
     },
   });
 

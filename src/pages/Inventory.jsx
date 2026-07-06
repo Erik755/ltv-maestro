@@ -23,12 +23,12 @@ export default function Inventory() {
   const [showNewContainer, setShowNewContainer] = useState(false);
 
   const { data: ingredients = [] } = useQuery({
-    queryKey: ['ingredients'],
+    queryKey: ['ingredients', { active: true }],
     queryFn: () => base44.entities.Ingredient.filter({ is_active: true }),
   });
 
   const { data: containers = [] } = useQuery({
-    queryKey: ['containers'],
+    queryKey: ['containers', { active: true }],
     queryFn: () => base44.entities.Container.filter({ is_active: true }),
   });
 

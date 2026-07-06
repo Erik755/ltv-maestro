@@ -52,7 +52,7 @@ export default function CashCut() {
   const { data: orders = [] } = useQuery({
     queryKey: ['pendingOrders'],
     queryFn: async () => {
-      const rawOrders = await base44.entities.Order.filter({ cut_id: null });
+      const rawOrders = await base44.entities.Order.filter({ cut_id: null }, '-created_date');
       return rawOrders.map(deserializeOrder);
     },
   });
@@ -94,6 +94,7 @@ export default function CashCut() {
       queryClient.invalidateQueries({ queryKey: ['pendingOrders'] });
       queryClient.invalidateQueries({ queryKey: ['pendingExpenses'] });
       queryClient.invalidateQueries({ queryKey: ['allCuts'] });
+      queryClient.invalidateQueries({ queryKey: ['todayOrdersReport'] });
       setCountedCash('');
       setCountedCard('');
       setCountedTransfer('');
@@ -248,6 +249,7 @@ export default function CashCut() {
       queryClient.invalidateQueries({ queryKey: ['pendingOrders'] });
       queryClient.invalidateQueries({ queryKey: ['pendingExpenses'] });
       queryClient.invalidateQueries({ queryKey: ['allCuts'] });
+      queryClient.invalidateQueries({ queryKey: ['todayOrdersReport'] });
       
       toast.dismiss();
       toast.success('Base de datos limpiada con éxito.');

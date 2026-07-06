@@ -14,7 +14,7 @@ export default function Reports() {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['todayOrders'],
+    queryKey: ['todayOrdersReport'],
     queryFn: async () => {
       const rawOrders = await base44.entities.Order.filter({ sale_date: today });
       return rawOrders.map(deserializeOrder);

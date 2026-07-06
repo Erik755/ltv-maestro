@@ -58,17 +58,19 @@ export default function Orders() {
 
   // Solo mostrar órdenes del corte/turno activo (cut_id null)
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['todayOrders'],
+    queryKey: ['pendingOrders'],
     queryFn: async () => {
       const rawOrders = await base44.entities.Order.filter({ cut_id: null }, '-created_date');
       return rawOrders.map(deserializeOrder);
     },
-    staleTime: 10000,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Order.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todayOrders'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['todayOrdersReport'] });
+    },
   });
 
   const getStatusConfig = (status) => ORDER_STATUSES.find(s => s.id === status) || ORDER_STATUSES[0];
