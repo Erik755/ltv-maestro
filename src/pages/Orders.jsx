@@ -89,11 +89,16 @@ export default function Orders() {
     return (
       <Card key={order.id} className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display font-bold text-lg">#{order.order_number}</span>
+            {order.customer_name && (
+              <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
+                👤 {order.customer_name}
+              </span>
+            )}
             <Badge className={`${statusConfig.color} border text-[11px]`}>{statusConfig.label}</Badge>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
             <Clock className="w-3 h-3" />
             {order.created_date ? format(new Date(order.created_date), 'HH:mm') : ''}
           </div>

@@ -118,7 +118,7 @@ export default function NewSale() {
     setTicketItems(prev => prev.map((item, i) => i === index ? { ...item, quantity: qty } : item));
   };
 
-  const handleCompleteSale = async (paymentMethod) => {
+  const handleCompleteSale = async (paymentMethod, customerName) => {
     if (ticketItems.length === 0) return;
 
     const subtotal = ticketItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -143,7 +143,7 @@ export default function NewSale() {
       card_commission: commission,
       real_income: paymentMethod === 'cortesia' ? 0 : realIncome,
       sale_date: new Date().toISOString().split('T')[0],
-      notes: serializeOrderNotes('', paymentMethod),
+      notes: serializeOrderNotes('', paymentMethod, customerName),
     };
 
     await createOrderMutation.mutateAsync(orderData);

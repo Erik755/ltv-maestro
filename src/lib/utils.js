@@ -8,21 +8,40 @@ export function cn(...inputs) {
 
 export const isIframe = window.self !== window.top;
 
-export const serializeOrderNotes = (userNotes, paymentMethod) => {
-  if (paymentMethod === 'cortesia') {
-    return `${userNotes || ''}\n[METADATA:payment_method=cortesia]`.trim();
+export const serializeOrderNotes = (userNotes, paymentMethod, customerName) => {
+  let notes = userNotes || '';
+  if (customerName && customerName.trim()) {
+    notes = `[CLIENTE:${customerName.trim()}] ${notes}`.trim();
   }
-  return userNotes || '';
+  if (paymentMethod === 'cortesia') {
+    notes = `${notes}\n[METADATA:payment_method=cortesia]`.trim();
+  }
+  return notes;
 };
 
 export const deserializeOrder = (o) => {
   if (!o) return o;
-  if (o.notes && o.notes.includes('[METADATA:payment_method=cortesia]')) {
-    return {
-      ...o,
-      payment_method: 'cortesia',
-      notes: o.notes.replace('[METADATA:payment_method=cortesia]', '').trim(),
-    };
+  let paymentMethod = o.payment_method;
+  let notes = o.notes || '';
+  let customerName = '';
+
+  // Extraer método de pago de cortesía si existe
+  if (notes.includes('[METADATA:payment_method=cortesia]')) {
+    paymentMethod = 'cortesia';
+    notes = notes.replace('[METADATA:payment_method=cortesia]', '').trim();
   }
-  return o;
+
+  // Extraer nombre del cliente si existe
+  const clientMatch = notes.match(/^\[CLIENTE:([^\]]+)\]/);
+  if (clientMatch) {
+    customerName = clientMatch[1].trim();
+    notes = notes.replace(/^\[CLIENTE:[^\]]+\]\s*/, '').trim();
+  }
+
+  return {
+    ...o,
+    payment_method: paymentMethod,
+    customer_name: customerName,
+    notes: notes,
+  };
 };

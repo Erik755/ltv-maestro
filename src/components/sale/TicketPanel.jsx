@@ -19,6 +19,7 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState(null);
+  const [customerName, setCustomerName] = useState('');
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const commission = selectedPayment === 'tarjeta' ? subtotal * CARD_COMMISSION_RATE : 0;
@@ -31,9 +32,10 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
   const handlePay = () => {
     if (!selectedPayment || items.length === 0) return;
     if (selectedPayment === 'efectivo' && cashReceived && cashReceivedNum < total) return;
-    onCompleteSale(selectedPayment);
+    onCompleteSale(selectedPayment, customerName);
     setSelectedPayment(null);
     setCashReceived('');
+    setCustomerName('');
   };
 
   const handleSelectPayment = (id) => {
@@ -174,6 +176,18 @@ export default function TicketPanel({ items, onRemove, onUpdateQuantity, onCompl
             )}
           </div>
         )}
+
+        {/* Customer Name Input */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Nombre del Cliente</label>
+          <Input
+            type="text"
+            placeholder="Nombre para identificar la orden..."
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="h-10 text-sm font-semibold"
+          />
+        </div>
 
         {/* Payment methods */}
         <div className="grid grid-cols-4 gap-2">
