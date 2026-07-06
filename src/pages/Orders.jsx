@@ -63,6 +63,7 @@ export default function Orders() {
       const rawOrders = await base44.entities.Order.filter({ cut_id: null }, '-created_date');
       return rawOrders.map(deserializeOrder);
     },
+    staleTime: 10000,
   });
 
   const updateMutation = useMutation({
@@ -137,6 +138,7 @@ export default function Orders() {
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-shrink-0" title="Unidades procesadas de este producto">
                     <button
+                      type="button"
                       onClick={() => updateProcessedCount(order.id, i, processed - 1, item.quantity)}
                       disabled={processed <= 0}
                       className="w-6 h-6 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[10px]"
@@ -147,6 +149,7 @@ export default function Orders() {
                       {processed}/{item.quantity}
                     </span>
                     <button
+                      type="button"
                       onClick={() => updateProcessedCount(order.id, i, processed + 1, item.quantity)}
                       disabled={processed >= item.quantity}
                       className="w-6 h-6 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[10px]"
