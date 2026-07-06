@@ -81,11 +81,13 @@ export default function CashCut() {
   const saveCutMutation = useMutation({
     mutationFn: async (data) => {
       const cut = await base44.entities.CashCut.create(data);
-      // Marcar órdenes y gastos pendientes como pertenecientes a este corte
-      await Promise.all([
-        ...pendingOrders.map(o => base44.entities.Order.update(o.id, { cut_id: cut.id })),
-        ...pendingExpenses.map(e => base44.entities.DayExpense.update(e.id, { cut_id: cut.id })),
-      ]);
+      // Marcar órdenes y gastos pendientes como pertenecientes a este corte secuencialmente
+      for (const o of pendingOrders) {
+        await base44.entities.Order.update(o.id, { cut_id: cut.id });
+      }
+      for (const e of pendingExpenses) {
+        await base44.entities.DayExpense.update(e.id, { cut_id: cut.id });
+      }
       return cut;
     },
     onSuccess: (cut) => {
@@ -493,14 +495,14 @@ export default function CashCut() {
           </div>
         )}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          <StatCard icon={DollarSign} label="Total vendido" value={`$${stats.totalSales.toFixed(0)}`} color="text-primary" />
-          <StatCard icon={Wallet} label="Efectivo" value={`$${stats.totalCash.toFixed(0)}`} />
-          <StatCard icon={CreditCard} label="Tarjeta" value={`$${stats.totalCard.toFixed(0)}`} sub={`Comisión: $${stats.cardCommissions.toFixed(2)}`} />
-          <StatCard icon={Smartphone} label="Transferencia" value={`$${stats.totalTransfer.toFixed(0)}`} />
-          <StatCard icon={Gift} label="Cortesías" value={`$${stats.totalCourtesy.toFixed(0)}`} />
-          <StatCard icon={TrendingUp} label="Ingreso real" value={`$${stats.realIncome.toFixed(0)}`} color="text-emerald-600" />
-          <StatCard icon={Hash} label="Ventas" value={stats.numSales} sub={`Ticket prom: $${stats.avgTicket.toFixed(0)}`} />
-          <StatCard icon={X} label="Cancelaciones" value={stats.cancellations} color="text-destructive" />
+          <StatCard icon={DollarSign} label="Total vendido" value={isRevealed ? `$${stats.totalSales.toFixed(0)}` : "$***"} color="text-primary" />
+          <StatCard icon={Wallet} label="Efectivo" value={isRevealed ? `$${stats.totalCash.toFixed(0)}` : "$***"} />
+          <StatCard icon={CreditCard} label="Tarjeta" value={isRevealed ? `$${stats.totalCard.toFixed(0)}` : "$***"} sub={isRevealed ? `Comisión: $${stats.cardCommissions.toFixed(2)}` : "Comisión: $***"} />
+          <StatCard icon={Smartphone} label="Transferencia" value={isRevealed ? `$${stats.totalTransfer.toFixed(0)}` : "$***"} />
+          <StatCard icon={Gift} label="Cortesías" value={isRevealed ? `$${stats.totalCourtesy.toFixed(0)}` : "$***"} />
+          <StatCard icon={TrendingUp} label="Ingreso real" value={isRevealed ? `$${stats.realIncome.toFixed(0)}` : "$***"} color="text-emerald-600" />
+          <StatCard icon={Hash} label="Ventas" value={isRevealed ? stats.numSales : "***"} sub={isRevealed ? `Ticket prom: $${stats.avgTicket.toFixed(0)}` : "Ticket prom: $***"} />
+          <StatCard icon={X} label="Cancelaciones" value={isRevealed ? stats.cancellations : "***"} color="text-destructive" />
         </div>
       </div>
 
