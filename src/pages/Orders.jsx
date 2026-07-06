@@ -34,28 +34,24 @@ export default function Orders() {
 
   const [completedItems, setCompletedItems] = useState(() => {
     try {
-      const saved = localStorage.getItem('completed_items');
+      const saved = localStorage.getItem('completed_items_counts');
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
     }
   });
 
-  const isItemCompleted = (orderId, itemIndex) => {
-    return !!completedItems[orderId]?.includes(itemIndex);
+  const getProcessedCount = (orderId, itemIndex) => {
+    return completedItems[orderId]?.[itemIndex] ?? 0;
   };
 
-  const toggleItemCompleted = (orderId, itemIndex) => {
+  const updateProcessedCount = (orderId, itemIndex, count, max) => {
+    const cleanCount = Math.max(0, Math.min(max, parseInt(count) || 0));
     setCompletedItems(prev => {
-      const orderCompleted = prev[orderId] || [];
-      let updated;
-      if (orderCompleted.includes(itemIndex)) {
-        updated = orderCompleted.filter(idx => idx !== itemIndex);
-      } else {
-        updated = [...orderCompleted, itemIndex];
-      }
-      const next = { ...prev, [orderId]: updated };
-      localStorage.setItem('completed_items', JSON.stringify(next));
+      const orderCompleted = prev[orderId] || {};
+      const nextOrder = { ...orderCompleted, [itemIndex]: cleanCount };
+      const next = { ...prev, [orderId]: nextOrder };
+      localStorage.setItem('completed_items_counts', JSON.stringify(next));
       return next;
     });
   };
@@ -134,26 +130,25 @@ export default function Orders() {
 
         <div className="space-y-1">
           {order.items?.map((item, i) => {
-            const completed = isItemCompleted(order.id, i);
+            const processed = getProcessedCount(order.id, i);
+            const isCompleted = processed >= item.quantity;
             return (
-              <div key={i} className="flex items-start justify-between gap-3 text-sm py-1 border-b border-border/20 last:border-0">
+              <div key={i} className="flex items-start justify-between gap-3 text-sm py-1.5 border-b border-border/20 last:border-0">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-1 mt-0.5 flex-shrink-0" title="Marcar producto como completado">
+                  <div className="flex items-center gap-1 flex-shrink-0" title="Unidades procesadas de este producto">
                     <input
-                      type="checkbox"
-                      id={`item-${order.id}-${i}`}
-                      checked={completed}
-                      onChange={() => toggleItemCompleted(order.id, i)}
-                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                      type="number"
+                      min="0"
+                      max={item.quantity}
+                      value={processed}
+                      onChange={(e) => updateProcessedCount(order.id, i, e.target.value, item.quantity)}
+                      className="h-7 w-11 text-center font-bold rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
-                    <label
-                      htmlFor={`item-${order.id}-${i}`}
-                      className="text-[9px] text-muted-foreground/60 cursor-pointer select-none hidden sm:inline"
-                    >
-                      Completado
-                    </label>
+                    <span className="text-[10px] text-muted-foreground/60 select-none">
+                      / {item.quantity}
+                    </span>
                   </div>
-                  <div className={cn("flex-1 min-w-0 transition-all", completed && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
+                  <div className={cn("flex-1 min-w-0 transition-all", isCompleted && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
                     <span className="font-medium">{item.quantity}x</span> {item.product_name}
                     {item.extras?.length > 0 && (
                       <span className="text-xs text-muted-foreground ml-1">
@@ -163,7 +158,7 @@ export default function Orders() {
                     {item.note && <p className="text-[11px] text-muted-foreground italic">📝 {item.note}</p>}
                   </div>
                 </div>
-                <span className={cn("text-sm font-medium flex-shrink-0 transition-all", completed && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
+                <span className={cn("text-sm font-medium flex-shrink-0 transition-all", isCompleted && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
                   ${(item.price * item.quantity).toFixed(0)}
                 </span>
               </div>
