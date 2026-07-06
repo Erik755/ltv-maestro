@@ -43,13 +43,16 @@ export default function AppLayout() {
         {/* Logo */}
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-display text-xl font-bold text-sidebar-primary-foreground tracking-tight">
-                La Tercera Vuelta
-              </h1>
-              <p className="text-xs text-sidebar-foreground/60 mt-0.5 font-body">
-                Sistema de Punto de Venta
-              </p>
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Logo" className="w-9 h-9 rounded-full object-contain" />
+              <div>
+                <h1 className="font-display text-lg font-bold text-sidebar-primary-foreground tracking-tight leading-none">
+                  La Tercera Vuelta
+                </h1>
+                <p className="text-[10px] text-sidebar-foreground/60 mt-1 font-body">
+                  Sistema de Punto de Venta
+                </p>
+              </div>
             </div>
             <Button 
               variant="ghost" size="icon" 

@@ -29,7 +29,7 @@ export default function Login() {
 
   return (
     <AuthLayout
-      icon={LogIn}
+      logo="/logo.png"
       title="La Tercera Vuelta"
       subtitle="Inicia sesión en tu cuenta de operador"
     >

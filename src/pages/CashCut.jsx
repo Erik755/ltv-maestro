@@ -323,7 +323,8 @@ export default function CashCut() {
       <div className="p-4 space-y-6 max-w-md mx-auto">
         <Card className="p-6 bg-card border shadow-md space-y-6 font-mono text-sm relative overflow-hidden" id="ticket-cierre">
           {/* Header */}
-          <div className="text-center space-y-1 pb-4 border-b border-dashed">
+          <div className="text-center space-y-1 pb-4 border-b border-dashed flex flex-col items-center">
+            <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain rounded-full mb-2" />
             <h2 className="font-display text-lg font-bold tracking-wider">LA TERCERA VUELTA</h2>
             <p className="text-xs text-muted-foreground">REPORTE DE CIERRE DE CAJA</p>
             <p className="text-[10px] text-muted-foreground mt-1">Fecha: {lastSavedCut.cut_date}</p>

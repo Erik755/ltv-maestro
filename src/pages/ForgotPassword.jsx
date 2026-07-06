@@ -27,7 +27,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      icon={Mail}
+      logo="/logo.png"
       title="Restablecer contraseña"
       subtitle="Te enviaremos un enlace para restablecerla"
       footer={

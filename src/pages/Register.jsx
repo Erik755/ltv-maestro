@@ -73,7 +73,7 @@ export default function Register() {
   if (showOtp) {
     return (
       <AuthLayout
-        icon={Mail}
+        logo="/logo.png"
         title="Verifica tu correo"
         subtitle={`Enviamos un código a ${email}`}
       >
@@ -126,7 +126,7 @@ export default function Register() {
 
   return (
     <AuthLayout
-      icon={UserPlus}
+      logo="/logo.png"
       title="Crea tu cuenta"
       subtitle="Regístrate para comenzar"
       footer={

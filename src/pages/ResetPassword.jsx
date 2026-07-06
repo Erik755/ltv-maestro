@@ -37,7 +37,7 @@ export default function ResetPassword() {
   if (!resetToken) {
     return (
       <AuthLayout
-        icon={AlertTriangle}
+        logo="/logo.png"
         title="Enlace inválido"
         subtitle="Este enlace de restablecimiento es inválido o ya expiró"
         footer={
@@ -55,7 +55,7 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout
-      icon={Lock}
+      logo="/logo.png"
       title="Nueva contraseña"
       subtitle="Ingresa tu nueva contraseña"
     >
