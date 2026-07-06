@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { deserializeOrder } from '@/lib/utils';
+import { deserializeOrder, cn } from '@/lib/utils';
 
 const getPaymentMethodDisplay = (method) => {
   switch (method) {
@@ -31,6 +31,34 @@ export default function Orders() {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [authPassword, setAuthPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
+
+  const [completedItems, setCompletedItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('completed_items');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const isItemCompleted = (orderId, itemIndex) => {
+    return !!completedItems[orderId]?.includes(itemIndex);
+  };
+
+  const toggleItemCompleted = (orderId, itemIndex) => {
+    setCompletedItems(prev => {
+      const orderCompleted = prev[orderId] || [];
+      let updated;
+      if (orderCompleted.includes(itemIndex)) {
+        updated = orderCompleted.filter(idx => idx !== itemIndex);
+      } else {
+        updated = [...orderCompleted, itemIndex];
+      }
+      const next = { ...prev, [orderId]: updated };
+      localStorage.setItem('completed_items', JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Solo mostrar órdenes del corte/turno activo (cut_id null)
   const { data: orders = [], isLoading } = useQuery({
@@ -105,20 +133,42 @@ export default function Orders() {
         </div>
 
         <div className="space-y-1">
-          {order.items?.map((item, i) => (
-            <div key={i} className="flex items-start justify-between text-sm">
-              <div className="flex-1">
-                <span className="font-medium">{item.quantity}x</span> {item.product_name}
-                {item.extras?.length > 0 && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    ({item.extras.join(', ')})
-                  </span>
-                )}
-                {item.note && <p className="text-[11px] text-muted-foreground italic">📝 {item.note}</p>}
+          {order.items?.map((item, i) => {
+            const completed = isItemCompleted(order.id, i);
+            return (
+              <div key={i} className="flex items-start justify-between gap-3 text-sm py-1 border-b border-border/20 last:border-0">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mt-0.5 flex-shrink-0" title="Marcar producto como completado">
+                    <input
+                      type="checkbox"
+                      id={`item-${order.id}-${i}`}
+                      checked={completed}
+                      onChange={() => toggleItemCompleted(order.id, i)}
+                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`item-${order.id}-${i}`}
+                      className="text-[9px] text-muted-foreground/60 cursor-pointer select-none hidden sm:inline"
+                    >
+                      Completado
+                    </label>
+                  </div>
+                  <div className={cn("flex-1 min-w-0 transition-all", completed && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
+                    <span className="font-medium">{item.quantity}x</span> {item.product_name}
+                    {item.extras?.length > 0 && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({item.extras.join(', ')})
+                      </span>
+                    )}
+                    {item.note && <p className="text-[11px] text-muted-foreground italic">📝 {item.note}</p>}
+                  </div>
+                </div>
+                <span className={cn("text-sm font-medium flex-shrink-0 transition-all", completed && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
+                  ${(item.price * item.quantity).toFixed(0)}
+                </span>
               </div>
-              <span className="text-sm font-medium">${(item.price * item.quantity).toFixed(0)}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-border">
