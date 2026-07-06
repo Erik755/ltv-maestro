@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, ChevronRight, Lock, Unlock, CheckCircle } from 'lucide-react';
+import { Clock, ChevronRight, Lock, Unlock, CheckCircle, Minus, Plus } from 'lucide-react';
 import { ORDER_STATUSES } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -136,17 +136,23 @@ export default function Orders() {
               <div key={i} className="flex items-start justify-between gap-3 text-sm py-1.5 border-b border-border/20 last:border-0">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-shrink-0" title="Unidades procesadas de este producto">
-                    <input
-                      type="number"
-                      min="0"
-                      max={item.quantity}
-                      value={processed}
-                      onChange={(e) => updateProcessedCount(order.id, i, e.target.value, item.quantity)}
-                      className="h-7 w-11 text-center font-bold rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                    />
-                    <span className="text-[10px] text-muted-foreground/60 select-none">
-                      / {item.quantity}
+                    <button
+                      onClick={() => updateProcessedCount(order.id, i, processed - 1, item.quantity)}
+                      disabled={processed <= 0}
+                      className="w-6 h-6 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[10px]"
+                    >
+                      <Minus className="w-3 h-3 stroke-[3]" />
+                    </button>
+                    <span className="text-[11px] font-bold select-none min-w-[28px] text-center">
+                      {processed}/{item.quantity}
                     </span>
+                    <button
+                      onClick={() => updateProcessedCount(order.id, i, processed + 1, item.quantity)}
+                      disabled={processed >= item.quantity}
+                      className="w-6 h-6 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[10px]"
+                    >
+                      <Plus className="w-3 h-3 stroke-[3]" />
+                    </button>
                   </div>
                   <div className={cn("flex-1 min-w-0 transition-all", isCompleted && "line-through decoration-emerald-500 decoration-2 text-muted-foreground/50")}>
                     <span className="font-medium">{item.quantity}x</span> {item.product_name}
