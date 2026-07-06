@@ -151,7 +151,8 @@ export default function NewSale() {
 
     await createOrderMutation.mutateAsync(orderData);
 
-    // Deduct ingredients
+    // Deduct ingredients in parallel
+    const updatePromises = [];
     for (const item of ticketItems) {
       const recipe = recipes.find(r => r.product_id === item.product_id);
       if (recipe?.ingredients) {
@@ -159,12 +160,18 @@ export default function NewSale() {
           const ingredient = ingredients.find(ing => ing.id === ri.ingredient_id);
           if (ingredient) {
             const deduction = ri.quantity * item.quantity;
-            await base44.entities.Ingredient.update(ingredient.id, {
-              current_stock: Math.max(0, (ingredient.current_stock || 0) - deduction)
-            });
+            updatePromises.push(
+              base44.entities.Ingredient.update(ingredient.id, {
+                current_stock: Math.max(0, (ingredient.current_stock || 0) - deduction)
+              })
+            );
           }
         }
       }
+    }
+    
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
     }
 
     queryClient.invalidateQueries({ queryKey: ['ingredients'] });
